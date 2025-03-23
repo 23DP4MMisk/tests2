@@ -1,0 +1,701 @@
+
+*Papka data*
+  books.csv
+  clients.csv
+
+
+
+
+
+
+*class ASCIIAnimation*
+public class ASCIIAnimation {
+    public static void printWelcomeMessage() {
+        System.out.println("\033[1;34m"); // Синий цвет
+        System.out.println("██      ██ ██████   █████  ██████  ██    ██     ███    ███  █████  ███    ██  █████   ██████  ███████ ██████"); 
+        System.out.println("██      ██ ██   ██ ██   ██ ██   ██  ██  ██      ████  ████ ██   ██ ████   ██ ██   ██ ██       ██      ██   ██");
+        System.out.println("██      ██ ██████  ███████ ██████    ████       ██ ████ ██ ███████ ██ ██  ██ ███████ ██   ███ █████   ██████");  
+        System.out.println("██      ██ ██   ██ ██   ██ ██   ██    ██        ██  ██  ██ ██   ██ ██  ██ ██ ██   ██ ██    ██ ██      ██   ██"); 
+        System.out.println("███████ ██ ██████  ██   ██ ██   ██    ██        ██      ██ ██   ██ ██   ████ ██   ██  ██████  ███████ ██   ██");
+        System.out.println("\033[0m"); // Сброс цвета
+
+    }
+}
+
+
+
+*class ColorSheme*
+public class ColorScheme {
+  
+  public static final String COMMAND_COLOR = "\033[1;32m";  // Zaļā krāsa (izvēlēties jebkuru krāsu)
+  public static final String RESET = "\033[0m";             // Atiestatīt krāsu
+  
+  
+  public static final String ADD_COLOR = "\033[38;5;34m";      // Tumši zaļš
+  public static final String REMOVE_COLOR = "\033[38;5;34m";   
+  public static final String FIND_COLOR = "\033[38;5;34m\"";     
+  public static final String REGISTER_COLOR = "\033[38;5;34m\""; 
+
+  
+  
+  
+  public static final String TABLE_HEADER_COLOR = "\033[94m";
+  public static final String TABLE_RESET = "\033[0m";
+ 
+
+
+  // Krāsa, lai izceltu kļūdas vai brīdinājumus
+  public static final String ERROR_COLOR = "\033[31m"; // Sarkans par kļūdām
+  public static final String ERROR_RESET = "\033[0m"; // Atiestatīt krāsu
+}
+
+
+
+
+
+
+*class InitialDataLoader*
+import java.io.File;
+import java.util.Arrays;
+import java.util.List;
+
+public class InitialDataLoader {
+  
+
+    private static final List<Book> initialBooks = Arrays.asList(
+        new Book("The Catcher in the Rye", "J.D. Salinger", 1951),
+        new Book("1984", "George Orwell", 1949),
+        new Book("To Kill a Mockingbird", "Harper Lee", 1960)
+    );
+
+    private static final List<Client> initialClients = Arrays.asList(
+        new Client("John"),
+        new Client("Jane"),
+        new Client("Alice")
+    );
+
+    // Metode sākotnējo datu ielādei CSV failos, ja tie ir tukši
+    public static void loadInitialData() {
+        File booksFile = new File(CSVHandler.BOOKS_FILE);
+        File clientsFile = new File(CSVHandler.CLIENTS_FILE);
+
+        // Ja fails ar grāmatām neeksistē vai ir tukšs, mēs rakstām sākotnējās grāmatas
+        if (!booksFile.exists() || booksFile.length() == 0) {
+            CSVHandler.saveBooksToCSV(initialBooks);
+        }
+
+        // Ja klienta fails neeksistē vai ir tukšs, mēs ierakstām sākotnējos klientus
+        if (!clientsFile.exists() || clientsFile.length() == 0) {
+            CSVHandler.saveClientsToCSV(initialClients);
+        }
+    }
+}
+
+
+
+
+
+*class CSVHandler*
+import java.io.*;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
+
+
+public class CSVHandler {
+
+    public static final String BOOKS_FILE = "books.csv";
+    public static final String CLIENTS_FILE = "clients.csv";
+
+    // Grāmatas tiek saglabātas CSV failā
+    public static void saveBooksToCSV(List<Book> books) {
+        try (BufferedWriter writer = Helper.getWriter(BOOKS_FILE, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+            for (Book book : books) {
+                writer.write(book.getTitle() + "," + book.getAuthor() + "," + book.getYear() + "," + book.isBorrowed());
+                writer.newLine();  // Rindas pārtraukums pēc katra grāmatas ieraksta
+            }
+        } catch (IOException e) {
+            e.printStackTrace();  // Drukājiet kļūdu, ja tāda rodas
+        }
+    }
+
+    // Grāmatu lejupielāde no CSV
+    public static List<Book> loadBooksFromCSV() {
+        List<Book> books = new ArrayList<>();
+        try (BufferedReader reader = Helper.getReader(BOOKS_FILE)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] data = line.split(","); // Sadaliet virkni ar komatu
+                Book book = new Book(data[0], data[1], Integer.parseInt(data[2])); // Grāmatas izveide
+                if (Boolean.parseBoolean(data[3])) { // Pārbauda, ​​vai grāmata ir aizņemta
+                    book.borrowBook();
+                }
+                books.add(book); // Pievienojiet grāmatu sarakstam
+            }
+        } catch (IOException e) {
+            System.out.println("Error loading books from CSV.");
+        }
+        return books;
+    }
+
+    // Сохранение клиентов в CSV
+    public static void saveClientsToCSV(List<Client> clients) {
+        try (BufferedWriter writer = Helper.getWriter(CLIENTS_FILE, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+            for (Client client : clients) {
+                writer.write(client.getName()); // Mēs pierakstām klienta vārdu
+                writer.newLine(); // Rindas pārtraukums pēc katra klienta ieraksta
+            }
+        } catch (IOException e) {
+            e.printStackTrace(); // Drukājiet kļūdu, ja tāda rodas
+        }
+    }
+
+    // Notiek klientu ielāde no CSV
+    public static List<Client> loadClientsFromCSV() {
+        List<Client> clients = new ArrayList<>();
+        try (BufferedReader reader = Helper.getReader(CLIENTS_FILE)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                clients.add(new Client(line)); // Izveidojiet klientu no virknes un pievienojiet to sarakstam
+            }
+        } catch (IOException e) {
+            System.out.println("Error loading clients from CSV.");
+        }
+        return clients;
+    }
+}
+
+    
+
+
+*class Helper*
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+
+public class Helper {
+    public static BufferedReader getReader(String filename) throws IOException {
+        return Files.newBufferedReader(getFilePath(filename));
+     }
+ 
+     public static BufferedWriter getWriter(String filename, StandardOpenOption option, StandardOpenOption option2) throws IOException {
+        return Files.newBufferedWriter(getFilePath(filename), option);
+     }
+ 
+     private static Path getFilePath(String filename) throws FileNotFoundException {
+         Path filePath = Paths.get("data", filename);
+         if (!Files.exists(filePath)) {
+             throw new FileNotFoundException("File not found: " + filename);
+         }
+         return filePath;
+     }
+}
+
+
+
+
+
+
+
+*class LibaryManager*
+
+import java.util.List;
+import java.util.Scanner;
+
+
+public class LibaryManager {
+    public static void main(String[] args) throws Exception {
+        System.out.println("Hello, World!");
+        Scanner scanner = new Scanner(System.in);
+        
+        InitialDataLoader.loadInitialData();
+
+        
+        
+        List<Book> books = CSVHandler.loadBooksFromCSV();
+        List<Client> clients = CSVHandler.loadClientsFromCSV();
+
+        ASCIIAnimation.printWelcomeMessage();
+
+        while (true) {
+            System.out.println("\nAvailable commands:");
+            CommandPrinter.printCommands();
+
+            System.out.print("\n" + ColorScheme.COMMAND_COLOR + " Enter command: " + ColorScheme.RESET + " ");
+            String command = scanner.nextLine().trim().toLowerCase();
+
+            CommandExecutor.executeCommand(command, scanner, books, clients);
+        }
+    }
+}
+
+
+
+
+*class TableFormatter*
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class TableFormatter {
+    private static final String RESET = "\033[0m";
+    private static final String HEADER_COLOR = "\033[1;34m"; // Zils
+    private static final String ROW_COLOR = "\033[0;32m"; // Zaļš
+    private static final String BORROWED_COLOR = "\033[0;31m"; // Sarkans (ja grāmata ir aizņemta)
+
+    // Метод для вывода таблицы книг
+    public static void printBooksTable(List<Book> books) {
+        System.out.println(HEADER_COLOR + "----------------------------------------------------------------------------" + RESET);
+        System.out.printf(HEADER_COLOR + "| %-30s | %-20s | %-5s | %-8s |%n", "Title", "Author", "Year", "Borrowed");
+        System.out.println(HEADER_COLOR + "----------------------------------------------------------------------------" + RESET);
+        for (Book book : books) {
+            // Saglabājiet rindu apmaļu krāsu pēc krāsas maiņas uz Yes\No
+            String borrowedStatus = book.isBorrowed() ? BORROWED_COLOR + "YES     " + RESET + ROW_COLOR : " NO ";
+            System.out.printf(ROW_COLOR + "| %-30s | %-20s | %-5d | %-8s |%n", 
+                book.getTitle(), book.getAuthor(), book.getYear(), borrowedStatus);
+        }
+        System.out.println(HEADER_COLOR + "----------------------------------------------------------------------------" + RESET);
+    }
+
+    // Sašķiroto grāmatu izvadīšanas metode
+    public static void printSortedBooksTable(List<Book> books, Comparator<Book> comparator) {
+        books.sort(comparator); // Grāmatu šķirošana pirms izdošanas
+        
+        System.out.println(HEADER_COLOR + "----------------------------------------------------------------------------" + RESET);
+        System.out.printf(HEADER_COLOR + "| %-30s | %-20s | %-5s | %-8s |%n", "Title", "Author", "Year", "Borrowed");
+        System.out.println(HEADER_COLOR + "----------------------------------------------------------------------------" + RESET);
+        for (Book book : books) {
+            // Saglabājiet rindu apmaļu krāsu pēc krāsas maiņas uz Yes\No
+            String borrowedStatus = book.isBorrowed() ? BORROWED_COLOR + "YES     " + RESET + ROW_COLOR : " NO ";
+            System.out.printf(ROW_COLOR + "| %-30s | %-20s | %-5d | %-8s |%n", 
+                book.getTitle(), book.getAuthor(), book.getYear(), borrowedStatus);
+        }
+        System.out.println(HEADER_COLOR + "----------------------------------------------------------------------------" + RESET);
+    }
+
+    
+    // Klientu tabulas izvadīšanas metode
+    public static void printClientsTable(List<Client> clients) {
+    // Inicializējiet klienta un grāmatu maksimālos garumus
+    int maxClientNameLength = "Client Name".length();
+    int maxBooksLength = "Borrowed Books".length();
+
+    // Atrodiet klienta vārda maksimālo garumu un grāmatu sarakstu
+    for (Client client : clients) {
+        maxClientNameLength = Math.max(maxClientNameLength, client.getName().length());
+
+        // Veidojot līniju ar grāmatu nosaukumiem
+        String borrowedBooksList = client.getBorrowedBook().stream()
+            .map(Book::getTitle)
+            .collect(Collectors.joining(", "));
+
+        maxBooksLength = Math.max(maxBooksLength, borrowedBooksList.length());
+    }
+
+    // Formāts tabulas attēlošanai
+    String headerFormat = "| %-"+maxClientNameLength+"s | %-"+maxBooksLength+"s |";
+    String separator = "-".repeat(maxClientNameLength + maxBooksLength + 7);
+
+    // Tabulas drukāšana
+    System.out.println(HEADER_COLOR + separator + RESET);
+    System.out.printf(HEADER_COLOR + headerFormat + "%n", "Client Name", "Borrowed Books");
+    System.out.println(HEADER_COLOR + separator + RESET);
+
+    // Mēs šķirojam klientus un parādām viņu datus
+    for (Client client : clients) {
+        String borrowedBooksList = client.getBorrowedBook().stream()
+            .map(Book::getTitle)
+            .collect(Collectors.joining(", "));
+
+        System.out.printf(ROW_COLOR + headerFormat + "%n" + RESET, client.getName(), borrowedBooksList.isEmpty() ? "None" : borrowedBooksList);
+    }
+
+     System.out.println(HEADER_COLOR + separator + RESET);
+    }
+}
+
+
+
+*class ComandPrinter*
+public class CommandPrinter {
+    public static void printCommands() {
+        System.out.printf("%-20s%-50s\n", ColorScheme.COMMAND_COLOR + "add" + ColorScheme.RESET, "- Add a new book");
+        System.out.printf("%-20s%-50s\n", ColorScheme.COMMAND_COLOR + "remove" + ColorScheme.RESET, "- Remove a book");
+        System.out.printf("%-20s%-50s\n", ColorScheme.COMMAND_COLOR + "find" + ColorScheme.RESET, "- Find a book");
+        System.out.printf("%-20s%-50s\n", ColorScheme.COMMAND_COLOR + "list" + ColorScheme.RESET, "- List all books");
+        System.out.printf("%-20s%-50s\n", ColorScheme.COMMAND_COLOR + "list_client" + ColorScheme.RESET, "- List all clients");
+        System.out.printf("%-20s%-50s\n", ColorScheme.COMMAND_COLOR + "register" + ColorScheme.RESET, "- Register a new client");
+        System.out.printf("%-20s%-50s\n", ColorScheme.COMMAND_COLOR + "count" + ColorScheme.RESET, "- Count books");
+        System.out.printf("%-20s%-50s\n", ColorScheme.COMMAND_COLOR + "sort_asc" + ColorScheme.RESET, "- Sort books by year (ascending)");
+        System.out.printf("%-20s%-50s\n", ColorScheme.COMMAND_COLOR + "sort_desc" + ColorScheme.RESET, "- Sort books by year (descending)");
+        System.out.printf("%-20s%-50s\n", ColorScheme.COMMAND_COLOR + "borrow" + ColorScheme.RESET, "- Borrow a book");
+        System.out.printf("%-20s%-50s\n", ColorScheme.COMMAND_COLOR + "return" + ColorScheme.RESET, "- Return a borrowed book");
+        System.out.printf("%-20s%-50s\n", ColorScheme.COMMAND_COLOR + "exit" + ColorScheme.RESET, "- Exit the program");
+
+    }
+}
+
+
+
+
+
+*class ComandExecutor*
+import java.util.List;
+import java.util.Scanner;
+
+
+public class CommandExecutor {
+
+    public static void executeCommand(String command, Scanner scanner, List<Book> books, List<Client> clients) {
+        switch (command) {
+            case "add":
+                addBook(scanner, books);
+                break;
+
+            case "remove":
+                removeBook(scanner, books);
+                break;
+
+            case "find":
+                findBook(scanner, books);
+                break;
+
+            case "list":
+                TableFormatter.printBooksTable(books);;
+                break;
+
+            case "list_client":
+                TableFormatter.printClientsTable(clients);
+                break;
+
+            case "register":
+                registerClient(scanner, clients);
+                break;
+
+            case "count":
+                countBooks(books);
+                break;
+
+            
+
+            case "sort_asc":
+                TableFormatter.printSortedBooksTable(books, Book.sortByYearAsc);
+                break;
+
+            case "sort_desc":
+                TableFormatter.printSortedBooksTable(books, Book.sortByYearDesc);
+                break;
+
+            case "borrow":
+                borrowBook(scanner, books, clients);
+                break;
+
+            case "return":
+                returnBook(scanner, books, clients);
+                break;
+
+            case "exit":
+                System.out.println("Goodbye!");
+                System.exit(0);
+                break;
+
+            default:
+                System.out.println("Invalid command.");
+        }
+    }
+
+    private static void addBook(Scanner scanner, List<Book> books) {
+        System.out.print("Enter book title: ");
+        String title = scanner.nextLine();
+        System.out.print("Enter author: ");
+        String author = scanner.nextLine();
+        System.out.print("Enter year: ");
+        int year = scanner.nextInt();
+        scanner.nextLine();
+        Book.addBook(books, title, author, year);
+        CSVHandler.saveBooksToCSV(books);
+    }
+
+    private static void removeBook(Scanner scanner, List<Book> books) {
+        System.out.print("Enter book title to remove: ");
+        String title = scanner.nextLine();
+        Book.removeBook(books, title);
+    }
+
+    private static void findBook(Scanner scanner, List<Book> books) {
+        System.out.print("Enter book title: ");
+        String title = scanner.nextLine();
+        Book book = Book.findBookByTitle(books, title);
+        if (book != null) {
+            System.out.println(book);
+        } else {
+            System.out.println("Book not found.");
+        }
+    }
+
+   
+
+    
+
+    private static void registerClient(Scanner scanner, List<Client> clients) {
+        System.out.print("Enter client name: ");
+        String name = scanner.nextLine();
+        Client.registerClient(clients, name);
+        CSVHandler.saveClientsToCSV(clients);
+    }
+
+    private static void countBooks(List<Book> books) {
+        Book.countBooks(books);
+    }
+
+  
+
+   
+
+    private static void borrowBook(Scanner scanner, List<Book> books, List<Client> clients) {
+        System.out.print("Enter client name: ");
+        String clientName = scanner.nextLine();
+        Client client = Client.findClientByName(clients, clientName);
+        if (client == null) {
+            System.out.println("Client not found.");
+            return;
+        }
+
+        System.out.print("Enter book title to borrow: ");
+        String bookTitle = scanner.nextLine();
+        Book book = Book.findBookByTitle(books, bookTitle);
+        if (book != null) {
+            client.borrowBook(book);
+        } else {
+            System.out.println("Book not found.");
+        }
+    }
+
+    private static void returnBook(Scanner scanner, List<Book> books, List<Client> clients) {
+        System.out.print("Enter client name: ");
+        String clientName = scanner.nextLine();
+        Client client = Client.findClientByName(clients, clientName);
+        if (client == null) {
+            System.out.println("Client not found.");
+            return;
+        }
+
+        System.out.print("Enter book title to return: ");
+        String bookTitle = scanner.nextLine();
+        Book book = Book.findBookByTitle(books, bookTitle);
+        if (book != null) {
+            client.returnBook(book);
+        } else {
+            System.out.println("Book not found.");
+        }
+    }
+}
+
+
+
+
+*class Book*
+import java.util.List;
+
+import java.util.Comparator;
+
+public class Book {
+    private String title;
+    private String author;
+    private int year;
+    private boolean isBorrowed;
+
+    public Book(String title, String author, int year) {
+        this.title = title;
+        this.author = author;
+        this.year = year;
+        this.isBorrowed = false;
+    }
+
+    public String getTitle(){ 
+        return title; 
+    }
+    
+    public String getAuthor(){ 
+        return author; 
+    }
+    
+    public int getYear(){ 
+        return year; 
+    }
+    
+    public boolean isBorrowed(){ 
+        return isBorrowed; 
+    }
+
+    public void borrowBook() {
+        if (!isBorrowed) {
+            isBorrowed = true;
+            System.out.println("Book borrowed: " + title);
+        } else {
+            System.out.println("The book is already borrowed.");
+        }
+    }
+    
+    public void returnBook() {
+        if (isBorrowed) {
+            isBorrowed = false;
+            System.out.println("Book returned: " + title);
+        } else {
+            System.out.println("The book was not borrowed.");
+        }
+    }
+
+    @Override
+    public String toString(){
+        return String.format("Title: %s, Author: %s, Year: %d, Borrowed: %b", title, author, year, isBorrowed);
+    }
+
+   
+    // Comparator for sorting books by year (oldest to newest)
+    public static Comparator<Book> sortByYearAsc = Comparator.comparingInt(Book::getYear);
+
+    // Comparator for sorting books by year (newest to oldest)
+    public static Comparator<Book> sortByYearDesc = (b1, b2) -> Integer.compare(b2.getYear(), b1.getYear());
+    
+   
+    // Method to add a new book to the list
+    public static void addBook(List<Book> books, String title, String author, int year) {
+     books.add(new Book(title, author, year));
+    }
+
+   // Method to remove a book by title
+    public static void removeBook(List<Book> books, String title) {
+      books.removeIf(book -> book.getTitle().equalsIgnoreCase(title));
+    }
+
+   // Method to find a book by title
+   public static Book findBookByTitle(List<Book> books, String title) {
+        return books.stream()
+        .filter(book -> book.getTitle().equalsIgnoreCase(title))
+        .findFirst()
+        .orElse(null);
+    }
+
+   // Method to list all books
+   public static void listBooks(List<Book> books) {
+      books.forEach(System.out::println);
+    }
+
+   // Method to count total number of books
+    public static void countBooks(List<Book> books) {
+    System.out.println("Total books: " + books.size());
+    }
+
+   
+    
+
+  
+
+    public static void countBorrowedBooks(List<Book> books) {
+        long count = books.stream().filter(Book::isBorrowed).count();
+        System.out.println(ColorScheme.TABLE_HEADER_COLOR + " Borrowed books: " + count + ColorScheme.TABLE_RESET);
+
+
+    }
+
+    // Method to sort books by year ascending
+    public static void sortBooksByYearAsc(List<Book> books) {
+        books.sort(Book.sortByYearAsc);
+        listBooks(books);
+    }
+
+    // Method to sort books by year descending
+    public static void sortBooksByYearDesc(List<Book> books) {
+        books.sort(Book.sortByYearDesc);
+        listBooks(books);
+    }
+
+   
+}
+
+
+
+     
+*class client*   
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+public class Client {
+    private String name;
+    private List<Book> borrowedBooks;
+
+    public Client(String name) {
+        this.name = name;
+        this.borrowedBooks = new ArrayList<>();
+    }
+
+    public String getName(){ 
+        return name;
+    }
+    public List<Book> getBorrowedBook(){ 
+        return borrowedBooks; 
+    }
+
+    
+    public void borrowBook(Book book) {
+        if (!book.isBorrowed()) {
+            borrowedBooks.add(book);
+            book.borrowBook();
+        } else {
+            System.out.println("The book is already borrowed by another client.");
+        }
+    }
+    
+    
+    
+    
+    public void returnBook(Book book) {
+        if (borrowedBooks.contains(book)) {
+            borrowedBooks.remove(book);
+            book.returnBook();
+        } else {
+            System.out.println("You didn't borrow this book.");
+        }
+    }
+
+    @Override
+    public String toString() {
+        return name + " (Borrowed books: " + borrowedBooks.size() + ")";
+    }
+
+    public static void registerClient(Scanner scanner, List<Client> clients) {
+        System.out.print(ColorScheme.REGISTER_COLOR + " Enter client name: " + ColorScheme.RESET);
+        String name = scanner.nextLine();
+        clients.add(new Client(name));
+        CSVHandler.saveClientsToCSV(clients);
+    }
+
+    public static void listClients(List<Client> clients) {
+        TableFormatter.printClientsTable(clients);
+    }
+
+    // Method to register a new client
+    public static void registerClient(List<Client> clients, String name) {
+        clients.add(new Client(name));
+    }
+
+    public static Client findClientByName(List<Client> clients, String name) {
+        return clients.stream().filter(client -> client.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+    }
+
+   
+}
+
+    
+
+
+
+
+
